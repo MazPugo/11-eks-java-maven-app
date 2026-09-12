@@ -1,5 +1,3 @@
-#!/usr/bin/env groovy
-
 pipeline {
     agent any
     stages {
@@ -21,11 +19,20 @@ pipeline {
             environment {
                 AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
                 AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws_secret_access_key')
+                AWS_DEFAULT_REGION = 'eu-west-2'
             }
             steps {
                 script {
                    echo 'deploying docker image...'
-                   sh 'kubectl create deployment nginx-deployment --image=nginx'
+                   sh '''
+                       which aws || (apt-get update && apt-get install -y unzip curl && \
+                       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+                       unzip -o awscliv2.zip && ./aws/install)
+
+                       aws eks update-kubeconfig --region eu-west-2 --name demo-cluster
+
+                       kubectl create deployment nginx-deployment --image=nginx
+                   '''
                 }
             }
         }
