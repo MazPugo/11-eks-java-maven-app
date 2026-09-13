@@ -1,6 +1,9 @@
 #!/usr/bin/env groovy
 pipeline {
     agent any
+    options {
+        disableConcurrentBuilds()
+    }
     tools {
         maven 'Maven'
     }
