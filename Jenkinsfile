@@ -7,6 +7,10 @@ pipeline {
     tools {
         maven 'Maven'
     }
+    environment {
+        DOCKER_REPO_SERVER = '849354443079.dkr.ecr.eu-west-2.amazonaws.com'
+        DOCKER_REPO = "${DOCKER_REPO_SERVER}/java-maven-app"
+    }
     stages {
         stage('increment version') {
             steps {
@@ -30,14 +34,16 @@ pipeline {
             }
         }
         stage('build image') {
+            environment {
+              AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
+              AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws_secret_access_key')
+            }
             steps {
                 script {
                     echo "building the docker image..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh "docker build -t mazpugo/demo-app:${IMAGE_NAME} ."
-                        sh 'echo $PASS | docker login -u $USER --password-stdin'
-                        sh "docker push mazpugo/demo-app:${IMAGE_NAME}"
-                    }
+                    sh "docker build -t ${DOCKER_REPO}:${IMAGE_NAME} ."
+                    sh "aws ecr get-login-password --region eu-west-2 | docker login -u AWS --password-stdin ${DOCKER_REPO_SERVER}"
+                    sh "docker push ${DOCKER_REPO}:${IMAGE_NAME}"
                 }
             }
         }
